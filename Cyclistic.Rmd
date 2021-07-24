@@ -1,0 +1,198 @@
+---
+title: "Cyclistic Case Study"
+date: "24th July 2021"
+output:
+  html_notebook: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+### Overview
+
+Cyclistic is a bike-share program that features more than 5,800 bicycles and 600 docking stations. Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike. The majority of riders opt for traditional bikes; about 8% of riders use the assistive options. Cyclistic users are more likely to ride for leisure, but about 30% use them to commute to work each day.
+
+Until now, Cyclistic’s marketing strategy relied on building general awareness and appealing to broad consumer segments.One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes,and annual memberships. Customers who purchase single-ride or full-day passes are referred to as casual riders.Customers who purchase annual memberships are Cyclistic members.Cyclistic’s finance analysts have concluded that annual members are much more profitable than casual riders. Although the pricing flexibility helps Cyclistic attract more customers, Lily Moreno, the director of marketing believes that maximizing the number of annual members will be key to future growth. Rather than creating a marketing campaign that targets all-new customers, Moreno believes there is a very good chance to convert casual riders into members. She notes that casual riders are already aware of the Cyclistic program and have chosen Cyclistic for their mobility needs.
+
+### Business Task
+
+Find the key differences in terms of usage between casual riders and the members and provide recommendations to Cyclistic marketing team so that casual riders can be converted to members.
+
+### Stakeholders
+
+* **Lily Moreno**: The director of marketing and your manager. Moreno is responsible for the development of campaigns
+and initiatives to promote the bike-share program. These may include email, social media, and other channels.
+* **Cyclistic marketing analytics team**: A team of data analysts who are responsible for collecting, analyzing, and
+reporting data that helps guide Cyclistic marketing strategy. You joined this team six months ago and have been busy
+learning about Cyclistic’s mission and business goals — as well as how you, as a junior data analyst, can help Cyclistic
+achieve them.
+* **Cyclistic executive team**: The notoriously detail-oriented executive team will decide whether to approve the
+recommended marketing program.
+
+### Data
+
+The data has been made available by Motivate International Inc. under this [license](https://www.divvybikes.com/data-license-agreement).
+This a a public dataset that can be used for any lawful purpose.
+
+* Data is reliable as it is provided by a second party owned by the government.
+* Data is original as it is collected from the trip of each user.
+* Data is comprehensive as it contains information about start time, end time, latitudes, longitudes etc.
+* Data is current as we have information till June 2021.
+* Data is cited as per the license.
+
+Data is organized into months, we have separate dataset for each month. Licensing, privacy, security, and accessibility are addressed as long as we use the data for lawful purpose. The data can reveal trends in bookings of casual riders and members and can help in pointing out the key differences.
+
+### Preparing and cleaning data
+```{r}
+# Getting the data and merging it into one file
+jul_2020 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202007-divvy-tripdata.csv")
+aug_2020 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202008-divvy-tripdata.csv")
+sep_2020 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202009-divvy-tripdata.csv")
+oct_2020 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202010-divvy-tripdata.csv")
+nov_2020 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202011-divvy-tripdata.csv")
+dec_2020 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202012-divvy-tripdata.csv")
+jan_2021 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202101-divvy-tripdata.csv")
+feb_2021 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202102-divvy-tripdata.csv")
+mar_2021 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202103-divvy-tripdata.csv")
+apr_2021 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202104-divvy-tripdata.csv")
+may_2021 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202105-divvy-tripdata.csv")
+jun_2021 <- read_csv("/Users/shloktelang/Desktop/CaseStudy1/202106-divvy-tripdata.csv")
+annual_data <- rbind(jul_2020,aug_2020,sep_2020,oct_2020,nov_2020,dec_2020,jan_2021,feb_2021,mar_2021,apr_2021,may_2021,jun_2021)
+```
+
+```{r}
+# Removed all the NA values from the dataset
+annual_data_without_na <- na.omit(annual_data)
+```
+```{r}
+# Removed all the duplicate ride_id
+removed_duplicates <- annual_data_without_na %>% distinct(ride_id, .keep_all= TRUE)
+
+# Adding a rideTime column to check the length of the ride
+updated_data <- removed_duplicates %>% mutate(rideTime = difftime(ended_at, started_at, units = "mins"))
+
+# Removed all the rides having start and end station same and ride length less than 1 minute
+data_with_start_unequal_to_end <- updated_data %>% filter(start_station_name != end_station_name & rideTime > 1)
+
+# Adding a day_of_week column to the dataset
+cyclistic_2 <- data_with_start_unequal_to_end %>% mutate(data_of_week = wday(started_at, label = TRUE, abbr = FALSE))
+
+# Removing the data where ride lenth is negative
+all_trips_v2 <- cyclistic_2[!(cyclistic_2$start_station_name == "HQ QR" | cyclistic_2$rideTime<0),]
+
+
+```
+
+### Analysis
+##### Summary of ride length - 
+```{r}
+
+
+# Mean
+mean(all_trips_v2$rideTime)
+# Median
+median(all_trips_v2$rideTime)
+# Maximum ride length
+max(all_trips_v2$rideTime)
+# Minimum ride length
+min(all_trips_v2$rideTime)
+
+```
+
+
+##### Comparison between casual riders and members -
+```{r}
+# Average ride time
+aggregate(all_trips_v2$rideTime ~ all_trips_v2$member_casual, FUN = mean)
+# Median ride time
+aggregate(all_trips_v2$rideTime ~ all_trips_v2$member_casual, FUN = median)
+# Maximum ride time
+aggregate(all_trips_v2$rideTime ~ all_trips_v2$member_casual, FUN = max)
+# Minimum ride time
+aggregate(all_trips_v2$rideTime ~ all_trips_v2$member_casual, FUN = min)
+```
+
+
+##### Average ride time by each day for members vs casual users -
+```{r}
+aggregate(all_trips_v2$rideTime ~ all_trips_v2$member_casual + all_trips_v2$data_of_week, FUN = mean)
+```
+
+##### Number of rides and average ride length for each day
+```{r}
+all_trips_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>%  
+  group_by(member_casual, weekday) %>%  
+  summarise(number_of_rides = n()				
+            ,average_duration = mean(rideTime)) %>% 	
+  arrange(member_casual, weekday)		
+```
+
+
+##### Number of rides on each day of the week
+```{r}
+all_trips_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(rideTime)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge")
+```
+
+
+##### Average duration of rides on each day of the week
+```{r}
+all_trips_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(rideTime)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
+  geom_col(position = "dodge")
+
+```
+##### Rides on each type of bike for members and casual riders
+```{r}
+ggplot(data = all_trips_v2) + geom_bar(mapping = aes(x=rideable_type,fill=rideable_type)) + facet_wrap(~member_casual)
+```
+
+
+##### Number of rides for each month
+```{r}
+all_trips_v2 %>% 
+  mutate(month = month(started_at, label = TRUE)) %>% 
+  group_by(member_casual, month) %>% 
+  summarise(number_of_rides = n()) %>% 
+  arrange(member_casual, month)  %>% 
+  ggplot() +
+  geom_line(mapping = aes(x = month, y = number_of_rides, color = member_casual, group = member_casual))
+```
+
+##### Number of rides for each hour of the day
+```{r}
+all_trips_v2 %>% 
+  mutate(hour_of_the_day = hour(started_at)) %>% 
+  group_by(member_casual, hour_of_the_day) %>% 
+  summarise(number_of_rides = n()) %>% 
+  arrange(member_casual, hour_of_the_day)  %>% 
+  ggplot() +
+  geom_line(mapping = aes(x = hour_of_the_day, y = number_of_rides, color = member_casual, group = member_casual))
+```
+
+
+### Insights
+
+* Number of rides are consistent over the week for members, but there is a jump in the number of bookings for casual riders on the weekend (Friday to Sunday)
+* Average ride duration for casual riders is much more then that of members.
+* Usage is maximum for casual riders between 1200 hrs to 1800 hrs, while it is maximum for members between 1500 hrs to 1800 hrs.
+* Docked bike is the most preferred bike of the 3 for both types of riders.
+* Most bookings are done from June till August.
+
+### Recommendations
+
+* Marketing campaigns should be run between June to August as bike usage is the maximum in those months.
+* Advertisements should be run from noon till evening for maximum casual rider engagement.
+* Weekday offers can be introduced to encourage more bookings on weekdays.
+* The number of docked bikes can be increased as it is the most preferred choice.
